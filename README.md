@@ -9,3 +9,5 @@ Un projet e-commerce simple en PHP.
 - Authentification simple avec sessions
 - Fenetre pour ajouter/supprimer quantité
 - Pagination des produits 
+- Option de recherches de produits par leur nom
+- Option de classement de produits sur la base du prix ou du nom

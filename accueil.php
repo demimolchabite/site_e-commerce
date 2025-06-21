@@ -52,8 +52,10 @@ $username = $_SESSION['username'];
     .modal {
       display: none;
       position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       background-color: rgba(0,0,0,0.5);
       z-index: 9999;
     }
@@ -78,10 +80,27 @@ $username = $_SESSION['username'];
 </nav>
 
 <div class="sidebar">
-  <a href="accueil.php">🏠 accueil</a>
+  <a href="accueil.php">🏠 Accueil</a>
   <a href="profil.php">👤 Profil</a>
   <a href="panier.php">🛒 Panier</a>
-  <a href="logout.php">🚪 Déconnexion</a>
+  
+  <div class="px-3 mt-3">
+    <label for="search" class="form-label"><strong>🔍 Rechercher</strong></label>
+    <input type="text" id="search" class="form-control form-control-sm" placeholder="Nom du produit" value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
+  </div>
+
+  <div class="px-3 mt-3">
+    <label for="sort-select" class="form-label"><strong>🔃 Trier par :</strong></label>
+    <select id="sort-select" class="form-select form-select-sm">
+      <option value="">-- Aucun tri --</option>
+      <option value="name-asc" <?= ($_GET['sort'] ?? '') === 'name-asc' ? 'selected' : '' ?>>Nom (A → Z)</option>
+      <option value="name-desc" <?= ($_GET['sort'] ?? '') === 'name-desc' ? 'selected' : '' ?>>Nom (Z → A)</option>
+      <option value="price-asc" <?= ($_GET['sort'] ?? '') === 'price-asc' ? 'selected' : '' ?>>Prix (croissant)</option>
+      <option value="price-desc" <?= ($_GET['sort'] ?? '') === 'price-desc' ? 'selected' : '' ?>>Prix (décroissant)</option>
+    </select>
+  </div>
+
+  <a href="logout.php" class="mt-3 d-block px-3">🚪 Déconnexion</a>
 </div>
 
 <div class="main-content">
@@ -96,7 +115,7 @@ $username = $_SESSION['username'];
   </div>
 </div>
 
-<!-- MODALE produit -->
+<!-- Modale produit -->
 <div id="product-modal" class="modal">
   <div class="modal-content">
     <button onclick="fermerModal()" style="position:absolute; top:10px; right:15px;" class="btn btn-sm btn-danger">✖</button>
@@ -113,88 +132,104 @@ $username = $_SESSION['username'];
 </div>
 
 <script>
-  const username = <?= json_encode($username) ?>;
-  const keyPanier = "panier_user_" + username;
-  const produitsDiv = document.getElementById("produits");
-  let produitsCache = {};
+const username = <?= json_encode($username) ?>;
+const keyPanier = "panier_user_" + username;
+const produitsDiv = document.getElementById("produits");
+let produitsCache = {};
 
-  const params = new URLSearchParams(window.location.search);
-  const currentPage = parseInt(params.get("page")) || 1;
-  const produitsParPage = 8;
-  const offset = (currentPage - 1) * produitsParPage;
+const params = new URLSearchParams(window.location.search);
+const currentPage = parseInt(params.get("page")) || 1;
+const produitsParPage = 8;
+const offset = (currentPage - 1) * produitsParPage;
+const critereTri = params.get("sort") || "";
+const motCleRecherche = (params.get("search") || "").toLowerCase();
 
-  fetch(`https://dummyjson.com/products?limit=${produitsParPage}&skip=${offset}`)
-    .then(res => res.json())
-    .then(data => {
-      if (!data.products || data.products.length === 0) {
-        produitsDiv.innerHTML = '<p class="text-center">Aucun produit disponible pour le moment.</p>';
-        return;
-      }
-
-      data.products.forEach(prod => {
-        produitsCache[prod.id] = prod;
-
-        const col = document.createElement("div");
-        col.className = "col-12 col-sm-6 col-md-4 col-lg-3";
-        col.innerHTML = `
-          <div class="card h-100">
-            <img src="${prod.thumbnail}" class="card-img-top" alt="${prod.title}" onclick="afficherDetailsProduit(${prod.id})">
-            <div class="card-body d-flex flex-column">
-              <h5 class="card-title">${prod.title}</h5>
-              <p class="card-text">${prod.price}€</p>
-              <button class="btn btn-primary mt-auto" onclick="afficherDetailsProduit(${prod.id})">Voir plus</button>
-            </div>
-          </div>
-        `;
-        produitsDiv.appendChild(col);
-      });
-
-      // Ajout pagination
-      // Ajout pagination avancée
-return fetch("https://dummyjson.com/products")
+fetch("https://dummyjson.com/products?limit=100")
   .then(res => res.json())
-  .then(allData => {
-    const totalProduits = allData.total || 0;
+  .then(data => {
+    if (!data.products || data.products.length === 0) {
+      produitsDiv.innerHTML = '<p class="text-center">Aucun produit disponible pour le moment.</p>';
+      return;
+    }
+
+    // Filtrer par recherche
+    let produitsFiltres = data.products.filter(prod =>
+      prod.title.toLowerCase().includes(motCleRecherche)
+    );
+
+    // Trier les produits
+    function trierProduits(produits, critere) {
+      switch (critere) {
+        case "name-asc": return produits.sort((a, b) => a.title.localeCompare(b.title));
+        case "name-desc": return produits.sort((a, b) => b.title.localeCompare(a.title));
+        case "price-asc": return produits.sort((a, b) => a.price - b.price);
+        case "price-desc": return produits.sort((a, b) => b.price - a.price);
+        default: return produits;
+      }
+    }
+
+    const produitsTries = trierProduits(produitsFiltres, critereTri);
+
+    // Cacher les produits pour la pagination
+    produitsTries.forEach(prod => {
+      produitsCache[prod.id] = prod;
+    });
+
+    const pageProduits = produitsTries.slice(offset, offset + produitsParPage);
+
+    if (pageProduits.length === 0) {
+      produitsDiv.innerHTML = '<p class="text-center">Aucun produit trouvé.</p>';
+      return;
+    }
+
+    // Afficher les produits
+    pageProduits.forEach(prod => {
+      const col = document.createElement("div");
+      col.className = "col-12 col-sm-6 col-md-4 col-lg-3";
+      col.innerHTML = `
+        <div class="card h-100">
+          <img src="${prod.thumbnail}" class="card-img-top" alt="${prod.title}" onclick="afficherDetailsProduit(${prod.id})">
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title">${prod.title}</h5>
+            <p class="card-text">${prod.price}€</p>
+            <button class="btn btn-primary mt-auto" onclick="afficherDetailsProduit(${prod.id})">Voir plus</button>
+          </div>
+        </div>
+      `;
+      produitsDiv.appendChild(col);
+    });
+
+    // Pagination
+    const totalProduits = produitsTries.length;
     const totalPages = Math.ceil(totalProduits / produitsParPage);
     const paginationDiv = document.createElement("div");
     paginationDiv.className = "text-center mt-4";
 
     const createButton = (label, page, disabled = false, active = false) => {
       const btn = document.createElement("a");
-      btn.href = `accueil.php?page=${page}`;
+      btn.href = `accueil.php?page=${page}&sort=${critereTri}&search=${encodeURIComponent(motCleRecherche)}`;
       btn.textContent = label;
       btn.className = "btn btn-outline-primary mx-1";
-
       if (disabled) {
         btn.classList.add("disabled");
         btn.tabIndex = -1;
         btn.style.pointerEvents = "none";
       }
-
-      if (active) {
-        btn.classList.add("active");
-      }
-
+      if (active) btn.classList.add("active");
       return btn;
     };
 
-    // << First
     paginationDiv.appendChild(createButton("«", 1, currentPage === 1));
-    // < Previous
     paginationDiv.appendChild(createButton("‹", currentPage - 1, currentPage === 1));
 
-    const pageLinks = [];
     const maxPagesToShow = 5;
     let startPage = Math.max(1, currentPage - 2);
     let endPage = Math.min(totalPages, currentPage + 2);
 
-    if (currentPage <= 3) {
-      endPage = Math.min(totalPages, 5);
-    }
-    if (currentPage >= totalPages - 2) {
-      startPage = Math.max(1, totalPages - 4);
-    }
+    if (currentPage <= 3) endPage = Math.min(totalPages, 5);
+    if (currentPage >= totalPages - 2) startPage = Math.max(1, totalPages - 4);
 
+    const pageLinks = [];
     if (startPage > 1) {
       pageLinks.push(createButton("1", 1));
       if (startPage > 2) {
@@ -221,77 +256,89 @@ return fetch("https://dummyjson.com/products")
 
     pageLinks.forEach(btn => paginationDiv.appendChild(btn));
 
-    // > Next
     paginationDiv.appendChild(createButton("›", currentPage + 1, currentPage === totalPages));
-    // >> Last
     paginationDiv.appendChild(createButton("»", totalPages, currentPage === totalPages));
 
     produitsDiv.parentElement.appendChild(paginationDiv);
+  })
+  .catch(error => {
+    produitsDiv.innerHTML = '<p class="text-danger">Erreur lors du chargement des produits.</p>';
+    console.error("Erreur API :", error);
   });
 
-    })
-    .catch(error => {
-      produitsDiv.innerHTML = '<p class="text-danger">Erreur lors du chargement des produits.</p>';
-      console.error("Erreur API :", error);
-    });
+// Modale
+function afficherDetailsProduit(id) {
+  const prod = produitsCache[id];
+  if (!prod) return;
 
-  function afficherDetailsProduit(id) {
-    const prod = produitsCache[id];
-    if (!prod) return;
+  document.getElementById("modal-title").textContent = prod.title;
+  document.getElementById("modal-description").textContent = prod.description || "Pas de description.";
+  document.getElementById("modal-price").textContent = prod.price;
+  document.getElementById("modal-image").src = prod.thumbnail;
+  document.getElementById("modal-qty").value = 1;
 
-    document.getElementById("modal-title").textContent = prod.title;
-    document.getElementById("modal-description").textContent = prod.description || "Pas de description.";
-    document.getElementById("modal-price").textContent = prod.price;
-    document.getElementById("modal-image").src = prod.thumbnail;
-    document.getElementById("modal-qty").value = 1;
-
-    document.getElementById("modal-ajouter").onclick = () => {
-      const qty = parseInt(document.getElementById("modal-qty").value);
-      if (isNaN(qty) || qty < 1) {
-        alert("Veuillez entrer une quantité valide.");
-        return;
-      }
-      ajouterAuPanier(prod.id, qty);
-      fermerModal();
-    };
-
-    document.getElementById("product-modal").style.display = "block";
-  }
-
-  function fermerModal() {
-    document.getElementById("product-modal").style.display = "none";
-  }
-
-  window.onclick = function(event) {
-    const modal = document.getElementById("product-modal");
-    if (event.target === modal) {
-      fermerModal();
+  document.getElementById("modal-ajouter").onclick = () => {
+    const qty = parseInt(document.getElementById("modal-qty").value);
+    if (isNaN(qty) || qty < 1) {
+      alert("Veuillez entrer une quantité valide.");
+      return;
     }
+    ajouterAuPanier(prod.id, qty);
+    fermerModal();
   };
 
-  function ajouterAuPanier(id, quantite = 1) {
-    let panier = JSON.parse(localStorage.getItem(keyPanier)) || [];
-    quantite = parseInt(quantite);
-    if (isNaN(quantite) || quantite < 1) quantite = 1;
+  document.getElementById("product-modal").style.display = "block";
+}
 
-    const index = panier.findIndex(p => p.id === id);
-    if (index > -1) {
-      panier[index].quantite = (parseInt(panier[index].quantite) || 0) + quantite;
-    } else {
-      panier.push({ id, quantite });
-    }
+function fermerModal() {
+  document.getElementById("product-modal").style.display = "none";
+}
 
-    localStorage.setItem(keyPanier, JSON.stringify(panier));
-    majCompteurPanier();
+window.onclick = function(event) {
+  const modal = document.getElementById("product-modal");
+  if (event.target === modal) fermerModal();
+};
+
+// Panier
+function ajouterAuPanier(id, quantite = 1) {
+  let panier = JSON.parse(localStorage.getItem(keyPanier)) || [];
+  quantite = parseInt(quantite);
+  if (isNaN(quantite) || quantite < 1) quantite = 1;
+
+  const index = panier.findIndex(p => p.id === id);
+  if (index > -1) {
+    panier[index].quantite = (parseInt(panier[index].quantite) || 0) + quantite;
+  } else {
+    panier.push({ id, quantite });
   }
 
-  function majCompteurPanier() {
-    const panier = JSON.parse(localStorage.getItem(keyPanier)) || [];
-    const total = panier.reduce((acc, item) => acc + (parseInt(item.quantite) || 0), 0);
-    document.getElementById("cart-count").textContent = total;
-  }
-
+  localStorage.setItem(keyPanier, JSON.stringify(panier));
   majCompteurPanier();
+}
+
+function majCompteurPanier() {
+  const panier = JSON.parse(localStorage.getItem(keyPanier)) || [];
+  const total = panier.reduce((acc, item) => acc + (parseInt(item.quantite) || 0), 0);
+  document.getElementById("cart-count").textContent = total;
+}
+
+// Recherche et tri
+const sortSelect = document.getElementById("sort-select");
+sortSelect.addEventListener("change", () => {
+  params.set("sort", sortSelect.value);
+  params.set("page", "1");
+  window.location.href = "accueil.php?" + params.toString();
+});
+
+document.getElementById("search").addEventListener("keypress", e => {
+  if (e.key === "Enter") {
+    params.set("search", document.getElementById("search").value);
+    params.set("page", "1");
+    window.location.href = "accueil.php?" + params.toString();
+  }
+});
+
+majCompteurPanier();
 </script>
 
 </body>
