@@ -1,8 +1,5 @@
-<?php include 'config.php'; ?>
-
 <?php
-    session_start();
-    session_destroy();
-    header('Location: login.php');
-    exit();
-?>
+session_start();
+session_destroy();
+header("Location: login.php?msg=" . urlencode("Déconnecté avec succès."));
+exit();

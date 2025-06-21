@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1
--- Généré le : ven. 20 juin 2025 à 21:53
+-- Généré le : sam. 21 juin 2025 à 14:43
 -- Version du serveur : 10.4.32-MariaDB
 -- Version de PHP : 8.2.12
 
@@ -24,14 +24,13 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Structure de la table `panier`
+-- Structure de la table `produit`
 --
 
-CREATE TABLE `panier` (
+CREATE TABLE `produit` (
   `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `product_id` int(11) NOT NULL,
-  `quantite` int(11) DEFAULT 1
+  `nom` varchar(255) NOT NULL,
+  `prix` decimal(10,2) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -39,31 +38,20 @@ CREATE TABLE `panier` (
 --
 
 --
--- Index pour la table `panier`
+-- Index pour la table `produit`
 --
-ALTER TABLE `panier`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`);
+ALTER TABLE `produit`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- AUTO_INCREMENT pour les tables déchargées
 --
 
 --
--- AUTO_INCREMENT pour la table `panier`
+-- AUTO_INCREMENT pour la table `produit`
 --
-ALTER TABLE `panier`
+ALTER TABLE `produit`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- Contraintes pour les tables déchargées
---
-
---
--- Contraintes pour la table `panier`
---
-ALTER TABLE `panier`
-  ADD CONSTRAINT `panier_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `utilisateur` (`ID`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

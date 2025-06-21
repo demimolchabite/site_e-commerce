@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1
--- Généré le : ven. 20 juin 2025 à 21:09
+-- Généré le : sam. 21 juin 2025 à 00:09
 -- Version du serveur : 10.4.32-MariaDB
 -- Version de PHP : 8.2.12
 
@@ -30,8 +30,15 @@ SET time_zone = "+00:00";
 CREATE TABLE `utilisateur` (
   `ID` int(11) NOT NULL,
   `MotDePasse` varchar(10) DEFAULT NULL,
-  `Username` varchar(20) DEFAULT NULL
+  `username` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Déchargement des données de la table `utilisateur`
+--
+
+INSERT INTO `utilisateur` (`ID`, `MotDePasse`, `username`) VALUES
+(1, '111111', 'tdadee@gmail.com');
 
 --
 -- Index pour les tables déchargées
@@ -51,7 +58,7 @@ ALTER TABLE `utilisateur`
 -- AUTO_INCREMENT pour la table `utilisateur`
 --
 ALTER TABLE `utilisateur`
-  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `ID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
