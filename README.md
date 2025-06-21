@@ -1,10 +1,11 @@
 # MonShop
 
-Un projet e-commerce simple en PHP avec gestion de panier local.
+Un projet e-commerce simple en PHP.
 
 ## Fonctionnalités
 
 - Affichage de produits via API
-- Gestion du panier en localStorage
+- Gestion du panier électronique en localStorage
 - Authentification simple avec sessions
-- Modale pour ajouter/supprimer quantité
+- Fenetre pour ajouter/supprimer quantité
+- Pagination des produits 

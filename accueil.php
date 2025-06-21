@@ -105,10 +105,8 @@ $username = $_SESSION['username'];
       <img id="modal-image" src="" alt="" class="img-fluid my-3">
       <p id="modal-description"></p>
       <p><strong>Prix :</strong> <span id="modal-price"></span>€</p>
-
       <label for="modal-qty">Quantité :</label>
       <input type="number" id="modal-qty" class="form-control mb-3" min="1" value="1" />
-
       <button class="btn btn-primary" id="modal-ajouter">Ajouter au panier</button>
     </div>
   </div>
@@ -118,10 +116,14 @@ $username = $_SESSION['username'];
   const username = <?= json_encode($username) ?>;
   const keyPanier = "panier_user_" + username;
   const produitsDiv = document.getElementById("produits");
+  let produitsCache = {};
 
-  let produitsCache = {}; // cache local pour les détails produit
+  const params = new URLSearchParams(window.location.search);
+  const currentPage = parseInt(params.get("page")) || 1;
+  const produitsParPage = 8;
+  const offset = (currentPage - 1) * produitsParPage;
 
-  fetch("https://dummyjson.com/products?limit=12")
+  fetch(`https://dummyjson.com/products?limit=${produitsParPage}&skip=${offset}`)
     .then(res => res.json())
     .then(data => {
       if (!data.products || data.products.length === 0) {
@@ -146,6 +148,87 @@ $username = $_SESSION['username'];
         `;
         produitsDiv.appendChild(col);
       });
+
+      // Ajout pagination
+      // Ajout pagination avancée
+return fetch("https://dummyjson.com/products")
+  .then(res => res.json())
+  .then(allData => {
+    const totalProduits = allData.total || 0;
+    const totalPages = Math.ceil(totalProduits / produitsParPage);
+    const paginationDiv = document.createElement("div");
+    paginationDiv.className = "text-center mt-4";
+
+    const createButton = (label, page, disabled = false, active = false) => {
+      const btn = document.createElement("a");
+      btn.href = `accueil.php?page=${page}`;
+      btn.textContent = label;
+      btn.className = "btn btn-outline-primary mx-1";
+
+      if (disabled) {
+        btn.classList.add("disabled");
+        btn.tabIndex = -1;
+        btn.style.pointerEvents = "none";
+      }
+
+      if (active) {
+        btn.classList.add("active");
+      }
+
+      return btn;
+    };
+
+    // << First
+    paginationDiv.appendChild(createButton("«", 1, currentPage === 1));
+    // < Previous
+    paginationDiv.appendChild(createButton("‹", currentPage - 1, currentPage === 1));
+
+    const pageLinks = [];
+    const maxPagesToShow = 5;
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, currentPage + 2);
+
+    if (currentPage <= 3) {
+      endPage = Math.min(totalPages, 5);
+    }
+    if (currentPage >= totalPages - 2) {
+      startPage = Math.max(1, totalPages - 4);
+    }
+
+    if (startPage > 1) {
+      pageLinks.push(createButton("1", 1));
+      if (startPage > 2) {
+        const dots = document.createElement("span");
+        dots.textContent = "...";
+        dots.className = "mx-1";
+        pageLinks.push(dots);
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageLinks.push(createButton(i, i, false, i === currentPage));
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) {
+        const dots = document.createElement("span");
+        dots.textContent = "...";
+        dots.className = "mx-1";
+        pageLinks.push(dots);
+      }
+      pageLinks.push(createButton(totalPages, totalPages));
+    }
+
+    pageLinks.forEach(btn => paginationDiv.appendChild(btn));
+
+    // > Next
+    paginationDiv.appendChild(createButton("›", currentPage + 1, currentPage === totalPages));
+    // >> Last
+    paginationDiv.appendChild(createButton("»", totalPages, currentPage === totalPages));
+
+    produitsDiv.parentElement.appendChild(paginationDiv);
+  });
+
     })
     .catch(error => {
       produitsDiv.innerHTML = '<p class="text-danger">Erreur lors du chargement des produits.</p>';
@@ -188,7 +271,6 @@ $username = $_SESSION['username'];
 
   function ajouterAuPanier(id, quantite = 1) {
     let panier = JSON.parse(localStorage.getItem(keyPanier)) || [];
-
     quantite = parseInt(quantite);
     if (isNaN(quantite) || quantite < 1) quantite = 1;
 
